@@ -10,10 +10,17 @@ export default {
       errorMessage: "",
     };
   },
-  emits: ["coordinates", "addFavorite", "updateCoordinates"],
+  emits: ["addFavorite", "updateCoordinates", "updateWeatherData"],
   methods: {
+    resetWeatherData() {
+      this.$emit("updateWeatherData", {
+        date24h: [],
+        temperature24h: [],
+      });
+    },
     async fetchWeather() {
       try {
+        this.resetWeatherData();
         const geoResponse = await axios.get(
           `https://api.opencagedata.com/geocode/v1/json?q=${this.cityName}&key=${this.apiKey}`
         );
@@ -34,22 +41,34 @@ export default {
           conditions: weatherResponse.data.current_weather.weathercode,
           humidity: weatherResponse.data.hourly.relative_humidity_2m,
           windSpeed: weatherResponse.data.current_weather.windspeed,
+          date24h: weatherResponse.data.hourly.time,
+          temperature24h: weatherResponse.data.hourly.temperature_2m,
         };
         this.averageHumidity = this.calculateAverageHumidity(
           this.weather.humidity
         );
         this.errorMessage = "";
+        this.emitWeatherData();
       } catch (error) {
         this.errorMessage = "No cities found!";
         this.weather = null;
       }
     },
+    emitWeatherData() {
+      if (this.weather) {
+        this.$emit("updateWeatherData", {
+          temperature: this.weather.temperature,
+          humidity: this.averageHumidity,
+          windSpeed: this.weather.windSpeed,
+          date24h: this.weather.date24h,
+          temperature24h: this.weather.temperature24h,
+        });
+      }
+    },
     calculateAverageHumidity(humidityArray) {
       if (humidityArray.length === 0) return 0;
-
       const total = humidityArray.reduce((sum, value) => sum + value, 0);
       const average = total / humidityArray.length;
-
       return Math.round(average);
     },
     getWeatherDescription(code) {
@@ -66,7 +85,7 @@ export default {
       placeholder="Cerca una città"
       class="form-control me-2"
     />
-    <button @click="fetchWeather" class="btn btn-outline-light">Search</button>
+    <button @click="fetchWeather" class="btn btn-outline-dark">Search</button>
   </div>
   <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
   <div v-if="weather">
@@ -90,10 +109,7 @@ export default {
         </li>
       </ul>
     </div>
-    <button
-      @click="$emit('addFavorite', weather)"
-      class="btn btn-outline-light"
-    >
+    <button @click="$emit('addFavorite', weather)" class="btn btn-outline-dark">
       Add to favorites
     </button>
   </div>
