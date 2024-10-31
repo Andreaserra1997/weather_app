@@ -6,7 +6,7 @@ export default {
     return {
       cityName: "",
       weather: null,
-      apiKey: "e9c1358d0e78452e99125296856f49ac",
+      apiKey: import.meta.env.VITE_APP_API_KEY,
       errorMessage: "",
     };
   },
